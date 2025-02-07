@@ -108,3 +108,4 @@ class ProjectServiceTests(BaseTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    print("Hello, World!")
