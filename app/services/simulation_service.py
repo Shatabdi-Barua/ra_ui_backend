@@ -52,19 +52,11 @@ def update_simulation_by_id(simulation_data, simulation_id):
 
 
 def get_simulation_by_model_id(model_id):
-    return (
-        Simulation.query.filter_by(modelId=model_id)
-        .order_by(Simulation.updatedAt.desc())
-        .all()
-    )
+    return Simulation.query.filter_by(modelId=model_id).order_by(Simulation.updatedAt.desc()).all()
 
 
 def get_simulation_run():
-    result = (
-        SimulationRun.query.options(joinedload(SimulationRun.simulation))
-        .filter(SimulationRun.simulation)
-        .all()
-    )
+    result = SimulationRun.query.options(joinedload(SimulationRun.simulation)).filter(SimulationRun.simulation).all()
 
     for simulation_run in result:
         update_simulation_run_status(simulation_run, simulation_run.simulation)
@@ -75,9 +67,7 @@ def get_simulation_run():
 def get_simulation_run_by_id(simulation_run_id):
     simulation_run = SimulationRun.query.filter_by(id=simulation_run_id).first()
     if not simulation_run:
-        logger.error(
-            "Simulation Run with id " + str(simulation_run_id) + "does not exists!"
-        )
+        logger.error("Simulation Run with id " + str(simulation_run_id) + "does not exists!")
         abort(400, message="Simulation Run doesn't exists!")
     return simulation_run
 
@@ -182,12 +172,8 @@ def start_solver_task(simulation_id):
         delete_simulation_run(simulation.simulationRunId)
 
     model = model_service.get_model(simulation.modelId)
-    json_path = file_service.get_file_related_path(
-        model.outputFileId, simulation_id, extension="json"
-    )
-    msh_path = file_service.get_file_related_path(
-        model.outputFileId, simulation_id, extension="msh"
-    )
+    json_path = file_service.get_file_related_path(model.outputFileId, simulation_id, extension="json")
+    msh_path = file_service.get_file_related_path(model.outputFileId, simulation_id, extension="msh")
 
     sources_tasks = []
     results_container = []
@@ -196,18 +182,10 @@ def start_solver_task(simulation_id):
         task_statuses = []
         if simulation.taskType.value in (TaskType.DE.value, TaskType.BOTH.value):
             task_statuses.append(create_source_task(TaskType.DE.value, source["id"]))
-            results_container.append(
-                create_result_source_object(
-                    source, simulation.receivers, TaskType.DE.value
-                )
-            )
+            results_container.append(create_result_source_object(source, simulation.receivers, TaskType.DE.value))
         if simulation.taskType.value in (TaskType.DG.value, TaskType.BOTH.value):
             task_statuses.append(create_source_task(TaskType.DG.value, source["id"]))
-            results_container.append(
-                create_result_source_object(
-                    source, simulation.receivers, TaskType.DG.value
-                )
-            )
+            results_container.append(create_result_source_object(source, simulation.receivers, TaskType.DG.value))
 
         sources_tasks.append(
             {
@@ -249,9 +227,7 @@ def start_solver_task(simulation_id):
     for layer, material_id in simulation.layerIdByMaterialId.items():
         material = material_service.get_material_by_id(material_id)
         # Ignore the lower frequencies in [63, 125, 250, 500, 1000, 2000, 4000]
-        absorption_coefficients[layer] = ", ".join(
-            map(str, material.absorptionCoefficients[1:-1])
-        )
+        absorption_coefficients[layer] = ", ".join(map(str, material.absorptionCoefficients[1:-1]))
 
     with open(json_path, "w") as json_result_file:
         json_result_file.write(
@@ -303,11 +279,7 @@ def run_solver(simulation_run_id, json_path):
             return
 
         logger.info(f"SimulationRun found: {simulation_run}")
-        simulation = (
-            session.query(Simulation)
-            .filter_by(simulationRunId=simulation_run.id)
-            .first()
-        )
+        simulation = session.query(Simulation).filter_by(simulationRunId=simulation_run.id).first()
 
         if simulation_run:
             simulation_run.status = Status.Queued
@@ -351,9 +323,7 @@ def run_solver(simulation_run_id, json_path):
 def get_simulation_result_by_id(simulation_id):
     simulation = get_simulation_by_id(simulation_id)
     model = model_service.get_model(simulation.modelId)
-    json_path = file_service.get_file_related_path(
-        model.outputFileId, simulation_id, extension="json"
-    )
+    json_path = file_service.get_file_related_path(model.outputFileId, simulation_id, extension="json")
 
     with open(json_path, "r") as json_file:
         result_container = json.load(json_file)
@@ -364,9 +334,7 @@ def get_simulation_result_by_id(simulation_id):
 def update_simulation_run_status(simulation_run, simulation):
     # TODO: update source percentage later
     model = model_service.get_model(simulation.modelId)
-    json_path = file_service.get_file_related_path(
-        model.outputFileId, simulation.id, extension="json"
-    )
+    json_path = file_service.get_file_related_path(model.outputFileId, simulation.id, extension="json")
     with open(json_path, "r") as json_file:
         result_container = json.load(json_file)
         try:
@@ -381,9 +349,7 @@ def update_simulation_run_status(simulation_run, simulation):
 def get_simulation_run_status_by_id(simulation_run_id):
     simulation = Simulation.query.filter_by(simulationRunId=simulation_run_id).first()
     if not simulation:
-        logger.error(
-            f"Simulation for the simulation run id {str(simulation_run_id)} does not exists!"
-        )
+        logger.error(f"Simulation for the simulation run id {str(simulation_run_id)} does not exists!")
         abort(400, message="Simulation doesn't exists!")
 
     simulation_run = SimulationRun.query.filter_by(id=simulation_run_id).first()
